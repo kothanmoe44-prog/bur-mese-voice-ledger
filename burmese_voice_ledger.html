@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>မြန်မာ အသံသုံး ငွေစာရင်း အက်ပ် (Burmese Voice Ledger)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Burmese -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Padauk', 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        
+        /* Custom pulses for mic recording state */
+        @keyframes mic-pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.08); box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .mic-active {
+            animation: mic-pulse 1.5s infinite;
+            background-color: #ef4444 !important;
+            color: white !important;
+        }
+
+        /* Responsive custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- Header Navigation -->
+    <header class="bg-white shadow-sm sticky top-0 z-40 border-b border-gray-200">
+        <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-calculator text-red-600 text-2xl"></i>
+                <h1 class="text-xl font-bold text-gray-800 tracking-tight">သန်းမိုး - ငွေစာရင်း</h1>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="toggleVoiceGuideModal()" class="px-3 py-1.5 bg-blue-50 text-blue-600 text-sm rounded-lg hover:bg-blue-100 font-medium transition-colors flex items-center space-x-1">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>အသံသုံးနည်း</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container (Mobile First Layout) -->
+    <main class="max-w-2xl mx-auto px-4 pt-4 space-y-6">
+
+        <!-- Banner / Voice Assistant Status -->
+        <div id="voiceStatusBanner" class="bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-2xl p-4 shadow-md transition-all duration-300">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <button id="globalMicBtn" onclick="toggleGlobalVoiceSearch()" class="w-12 h-12 rounded-full bg-white text-red-600 flex items-center justify-center text-xl shadow hover:bg-red-50 transition-transform active:scale-95">
+                        <i class="fa-solid fa-microphone" id="globalMicIcon"></i>
+                    </button>
+                    <div>
+                        <h2 class="font-bold text-lg leading-tight" id="voiceBannerTitle">အသံဖြင့် စာရင်းသွင်းမည်</h2>
+                        <p class="text-xs text-red-100 mt-0.5" id="voiceBannerSub">ခလုတ်ကိုနှိပ်ပြီး "တနင်္လာ မနက် ရငွေ ၁၀၀၀၀" ဟုပြောပါ</p>
+                    </div>
+                </div>
+                <div id="recordingWave" class="hidden flex items-center space-x-1">
+                    <span class="w-1.5 h-6 bg-white rounded-full animate-bounce" style="animation-delay: 0.1s"></span>
+                    <span class="w-1.5 h-8 bg-white rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+                    <span class="w-1.5 h-4 bg-white rounded-full animate-bounce" style="animation-delay: 0.3s"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1. Account Selection & Creation Card (လူတစ်ယောက်ချင်းစီ စာရင်း) -->
+        <section class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center justify-between">
+                <span>လူတစ်ယောက်ချင်းစီ စာရင်း</span>
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-md font-normal" id="currentAccountBadge">လက်ရှိ: -</span>
+            </h2>
+
+            <!-- Add Person Form -->
+            <div class="flex items-center space-x-2 mb-4">
+                <div class="relative flex-1">
+                    <input type="text" id="newAccountName" placeholder="အမည်ထည့်ပါ" class="w-full pl-3 pr-10 py-2.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-base">
+                    <button onclick="startFieldSpeech('newAccountName')" class="absolute right-2 top-2.5 text-gray-400 hover:text-red-500 px-1">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                </div>
+                <button onclick="addNewAccount()" class="px-5 py-2.5 bg-gray-900 text-white rounded-xl font-medium hover:bg-black active:scale-95 transition-all text-base shrink-0">
+                    ထည့်မည်
+                </button>
+            </div>
+
+            <!-- List of Accounts / Pills -->
+            <div id="accountPills" class="flex flex-wrap gap-2 pt-1">
+                <!-- Dynamic Person Cards loaded here -->
+            </div>
+        </section>
+
+        <!-- Dynamic Content Header (Displays Selected Person) -->
+        <div id="activePersonHeader" class="hidden bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-xs text-gray-500">လက်ရှိ စာရင်း</p>
+                <h3 class="text-xl font-bold text-gray-800" id="activePersonTitle">Ttt</h3>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="renameCurrentAccount()" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">
+                    အမည်ပြောင်း
+                </button>
+                <button onclick="deleteCurrentAccount()" class="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100">
+                    ဖျက်
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. Weekly Day-wise Entry Card (နေ့ရက်အလိုက် ရငွေ / ပေးငွေ) -->
+        <section id="ledgerSection" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h2 class="text-lg font-bold text-blue-600">နေ့ရက်အလိုက် ရငွေ / ပေးငွေ</h2>
+                <p class="text-xs text-gray-500">မနက် ရငွေ | မနက် ပေးငွေ | ညနေ ရငွေ | ညနေ ပေးငွေ</p>
+            </div>
+
+            <!-- Accordion / Tabs for Days -->
+            <div class="space-y-3" id="daysContainer">
+                <!-- Days (Monday - Sunday) will be dynamically generated -->
+            </div>
+        </section>
+
+        <!-- 3. Totals & Dynamic Calculation Rules Card (ရငွေ/ပေးငွေ တွက်ချက်မှု) -->
+        <section id="calculationSection" class="space-y-4">
+
+            <!-- Total Overall Display -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-2">
+                <div class="flex justify-between items-center text-blue-600 font-bold text-lg">
+                    <span>ရငွေစုစုပေါင်း</span>
+                    <span>— <span id="totalIncomeText">0</span></span>
+                </div>
+                <div class="flex justify-between items-center text-red-600 font-bold text-lg">
+                    <span>ပေးငွေစုစုပေါင်း</span>
+                    <span>— <span id="totalExpenseText">0</span></span>
+                </div>
+            </div>
+
+            <!-- Income Calculation Box (ရငွေတွက်ချက်) -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
+                <h3 class="text-lg font-bold text-blue-600">ရငွေတွက်ချက်</h3>
+                <p class="text-xs text-gray-500 leading-relaxed">
+                    + - × ÷ % = ကို အစဉ်လိုက် ကိုယ်လိုသလို ထည့်နိုင်ပါတယ်။ % က လက်ရှိပမာဏထဲက ရာခိုင်နှုန်းနှုတ်ပါတယ်။
+                </p>
+
+                <!-- Income Rules List -->
+                <div id="incomeRulesContainer" class="space-y-2">
+                    <!-- Dynamic Rule Inputs -->
+                </div>
+
+                <button onclick="addRule('income')" class="w-full py-2.5 bg-blue-50 text-blue-600 font-medium rounded-xl hover:bg-blue-100 transition-colors text-sm flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>+ စည်းမျဉ်းထည့်မည်</span>
+                </button>
+
+                <div class="pt-2 border-t flex justify-between items-center font-bold text-blue-600 text-base">
+                    <span>ရငွေကျန်</span>
+                    <span>— <span id="netIncomeText">0</span></span>
+                </div>
+            </div>
+
+            <!-- Expense Calculation Box (ပေးငွေတွက်ချက်) -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
+                <h3 class="text-lg font-bold text-red-600">ပေးငွေတွက်ချက်</h3>
+                <p class="text-xs text-gray-500 leading-relaxed">
+                    + - × ÷ % = ကိုလည်း ကိုယ်လိုသလို အစဉ်လိုက်ထည့်နိုင်ပါတယ်။
+                </p>
+
+                <!-- Expense Rules List -->
+                <div id="expenseRulesContainer" class="space-y-2">
+                    <!-- Dynamic Rule Inputs -->
+                </div>
+
+                <button onclick="addRule('expense')" class="w-full py-2.5 bg-red-50 text-red-600 font-medium rounded-xl hover:bg-red-100 transition-colors text-sm flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>+ စည်းမျဉ်းထည့်မည်</span>
+                </button>
+
+                <div class="pt-2 border-t flex justify-between items-center font-bold text-red-600 text-base">
+                    <span>ပေးငွေကျန်</span>
+                    <span>— <span id="netExpenseText">0</span></span>
+                </div>
+            </div>
+
+            <!-- 4. Profit / Loss Final Summary Card (အရှုံး / အမြတ်) -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+                <h3 class="text-lg font-bold text-gray-800">အရှုံး / အမြတ်</h3>
+
+                <div id="profitResultCard" class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
+                    <span class="text-xl font-bold text-emerald-600" id="finalProfitText">အမြတ် + 0</span>
+                </div>
+            </div>
+
+            <!-- 5. Weekly Summary Table Modal Toggle Button & Actions -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between space-x-2">
+                <button onclick="saveAllData()" class="flex-1 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-black active:scale-95 transition-all text-center">
+                    သိမ်းမည်
+                </button>
+                <button onclick="openSummaryModal()" class="flex-1 py-3 bg-gray-100 text-gray-800 rounded-xl font-bold hover:bg-gray-200 active:scale-95 transition-all text-center">
+                    ဒီစာရင်းရှင်းမည် / အနှစ်ချုပ်
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal 1: Summary Table Modal (စာရင်းအနှစ်ချုပ်) -->
+    <div id="summaryModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-xl">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="text-lg font-bold text-gray-800" id="summaryModalTitle">စာရင်းအနှစ်ချုပ်</h3>
+                <button onclick="closeSummaryModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">
+                    &times;
+                </button>
+            </div>
+
+            <!-- Table UI matching uploaded screenshot -->
+            <div class="overflow-x-auto border border-gray-300 rounded-xl">
+                <table class="w-full text-sm text-center border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-300">
+                            <th class="p-2 border-r border-gray-300 font-bold text-gray-700">နေ့ရက်</th>
+                            <th class="p-2 border-r border-gray-300 font-bold text-blue-600">မနက် ရငွေ</th>
+                            <th class="p-2 border-r border-gray-300 font-bold text-red-600">မနက် ပေးငွေ</th>
+                            <th class="p-2 border-r border-gray-300 font-bold text-blue-600">ညနေ ရငွေ</th>
+                            <th class="p-2 font-bold text-red-600">ညနေ ပေးငွေ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody" class="divide-y divide-gray-200">
+                        <!-- Dynamic Rows loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Summary Totals -->
+            <div class="space-y-1 text-base font-bold pt-2">
+                <div class="text-blue-600 flex justify-between">
+                    <span>ရငွေစုစုပေါင်း</span>
+                    <span id="summaryModalTotalIncome">— 0</span>
+                </div>
+                <div class="text-red-600 flex justify-between">
+                    <span>ပေးငွေစုစုပေါင်း</span>
+                    <span id="summaryModalTotalExpense">— 0</span>
+                </div>
+                <div class="text-emerald-600 flex justify-between text-lg pt-2 border-t">
+                    <span>တွက်ပြီးနောက် အမြတ်/အရှုံး</span>
+                    <span id="summaryModalNetProfit">+ 0</span>
+                </div>
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button onclick="clearCurrentData()" class="w-1/2 py-2.5 bg-red-50 text-red-600 rounded-xl font-medium hover:bg-red-100">
+                    စာရင်းအသစ်စမည်
+                </button>
+                <button onclick="closeSummaryModal()" class="w-1/2 py-2.5 bg-gray-900 text-white rounded-xl font-medium hover:bg-black">
+                    ပိတ်မည်
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Voice Command Instructions (အသံသုံးနည်း လမ်းညွှန်) -->
+    <div id="voiceGuideModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-md p-5 space-y-4 shadow-xl">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="text-lg font-bold text-gray-800">အသံဖြင့် စာရင်းသွင်းနည်း</h3>
+                <button onclick="toggleVoiceGuideModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">
+                    &times;
+                </button>
+            </div>
+
+            <div class="space-y-3 text-sm text-gray-600 leading-relaxed">
+                <p class="font-semibold text-gray-800">အသံဖြင့် အလွယ်တကူ စာရင်းသွင်းနိုင်သော နမူနာ စကားစုများ-</p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li><strong class="text-blue-600">"တနင်္လာ မနက် ရငွေ ၅၀၀၀"</strong> - တနင်္လာနေ့ နံနက် ရငွေတွင် ၅၀၀၀ ထည့်မည်။</li>
+                    <li><strong class="text-red-600">"အင်္ဂါ ညနေ ပေးငွေ ၂၀၀၀"</strong> - အင်္ဂါနေ့ ညနေ ပေးငွေတွင် ၂၀၀၀ ထည့်မည်။</li>
+                    <li><strong class="text-gray-800">"စာရင်းသိမ်းမည်"</strong> - စာရင်းများကို Local Storage တွင် သိမ်းမည်။</li>
+                </ul>
+                <p class="text-xs bg-amber-50 text-amber-700 p-2.5 rounded-lg border border-amber-200">
+                    * မြန်မာဘာသာ အသံဖမ်းစနစ်ကို Chrome / Edge Browser တွင် အကောင်းဆုံး ထောက်ပံ့ပေးထားပါသည်။
+                </p>
+            </div>
+
+            <button onclick="toggleVoiceGuideModal()" class="w-full py-2.5 bg-gray-900 text-white rounded-xl font-medium hover:bg-black">
+                နားလည်ပါပြီ
+            </button>
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        // Days configuration in Burmese
+        const DAYS = [
+            { id: 'mon', name: 'တနင်္လာ' },
+            { id: 'tue', name: 'အင်္ဂါ' },
+            { id: 'wed', name: 'ဗုဒ္ဓဟူး' },
+            { id: 'thu', name: 'ကြာသပတေး' },
+            { id: 'fri', name: 'သောကြာ' },
+            { id: 'sat', name: 'စနေ' },
+            { id: 'sun', name: 'တနင်္ဂနွေ' }
+        ];
+
+        // Operators configuration
+        const OPERATORS = [
+            { code: '+', label: '+' },
+            { code: '-', label: '-' },
+            { code: '*', label: '×' },
+            { code: '/', label: '÷' },
+            { code: '%', label: '%' },
+            { code: '=', label: '=' }
+        ];
+
+        // State structure
+        let appState = {
+            accounts: ['Ttt'],
+            activeAccount: 'Ttt',
+            data: {
+                'Ttt': {
+                    days: {},
+                    incomeRules: [{ op: '%', val: 14 }],
+                    expenseRules: [{ op: '*', val: 80 }]
+                }
+            }
+        };
+
+        // Initialize Default Empty Ledger structure for a day
+        function createEmptyDayObject() {
+            return {
+                morningIncome: 0,
+                morningExpense: 0,
+                eveningIncome: 0,
+                eveningExpense: 0
+            };
+        }
+
+        // Voice Recognition Initialization
+        let recognition = null;
+        let isListening = false;
+        let activeInputTargetId = null;
+
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'my-MM'; // Myanmar language code
+
+            recognition.onstart = function () {
+                isListening = true;
+                updateMicUI(true);
+            };
+
+            recognition.onend = function () {
+                isListening = false;
+                updateMicUI(false);
+            };
+
+            recognition.onresult = function (event) {
+                const transcript = event.results[0][0].transcript.trim();
+                handleSpeechResult(transcript);
+            };
+
+            recognition.onerror = function (event) {
+                console.error("Speech Recognition Error: ", event.error);
+                isListening = false;
+                updateMicUI(false);
+                alert("အသံဖမ်းယူရာတွင် အမှားအယွင်းရှိပါသည်: " + event.error);
+            };
+        }
+
+        // On Window Load
+        window.onload = function () {
+            loadFromLocalStorage();
+            renderAccountsPills();
+            renderDaysInputs();
+            renderRules();
+            calculateAll();
+        };
+
+        // --- Data Handling & Storage ---
+        function saveToLocalStorage() {
+            localStorage.setItem('burmese_voice_ledger_data', JSON.stringify(appState));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('burmese_voice_ledger_data');
+            if (saved) {
+                try {
+                    appState = JSON.parse(saved);
+                } catch (e) {
+                    console.error("Failed to parse saved data", e);
+                }
+            }
+
+            // Ensure active account exists
+            if (!appState.activeAccount && appState.accounts.length > 0) {
+                appState.activeAccount = appState.accounts[0];
+            }
+            ensureAccountDataStructure(appState.activeAccount);
+        }
+
+        function ensureAccountDataStructure(accName) {
+            if (!accName) return;
+            if (!appState.data[accName]) {
+                appState.data[accName] = {
+                    days: {},
+                    incomeRules: [{ op: '%', val: 14 }],
+                    expenseRules: [{ op: '*', val: 80 }]
+                };
+            }
+            DAYS.forEach(d => {
+                if (!appState.data[accName].days[d.id]) {
+                    appState.data[accName].days[d.id] = createEmptyDayObject();
+                }
+            });
+        }
+
+        // --- Account Management UI ---
+        function renderAccountsPills() {
+            const container = document.getElementById('accountPills');
+            const badge = document.getElementById('currentAccountBadge');
+            const header = document.getElementById('activePersonHeader');
+            const activeTitle = document.getElementById('activePersonTitle');
+
+            container.innerHTML = '';
+            badge.innerText = `လက်ရှိ: ${appState.activeAccount || '-'}`;
+
+            if (appState.activeAccount) {
+                header.classList.remove('hidden');
+                activeTitle.innerText = appState.activeAccount;
+            } else {
+                header.classList.add('hidden');
+            }
+
+            appState.accounts.forEach(acc => {
+                const isActive = acc === appState.activeAccount;
+                const pill = document.createElement('button');
+                pill.className = `px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    isActive
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`;
+                pill.innerText = acc;
+                pill.onclick = () => selectAccount(acc);
+                container.appendChild(pill);
+            });
+        }
+
+        function addNewAccount() {
+            const input = document.getElementById('newAccountName');
+            const name = input.value.trim();
+            if (!name) return;
+
+            if (!appState.accounts.includes(name)) {
+                appState.accounts.push(name);
+            }
+            appState.activeAccount = name;
+            ensureAccountDataStructure(name);
+            input.value = '';
+
+            saveToLocalStorage();
+            renderAccountsPills();
+            renderDaysInputs();
+            renderRules();
+            calculateAll();
+        }
+
+        function selectAccount(name) {
+            appState.activeAccount = name;
+            ensureAccountDataStructure(name);
+            saveToLocalStorage();
+            renderAccountsPills();
+            renderDaysInputs();
+            renderRules();
+            calculateAll();
+        }
+
+        function renameCurrentAccount() {
+            if (!appState.activeAccount) return;
+            const newName = prompt("အမည်သစ် ထည့်ပါ:", appState.activeAccount);
+            if (newName && newName.trim() && newName.trim() !== appState.activeAccount) {
+                const trimmed = newName.trim();
+                const oldName = appState.activeAccount;
+                
+                // Update array
+                const index = appState.accounts.indexOf(oldName);
+                if (index !== -1) appState.accounts[index] = trimmed;
+
+                // Move data
+                appState.data[trimmed] = appState.data[oldName];
+                delete appState.data[oldName];
+
+                appState.activeAccount = trimmed;
+                saveToLocalStorage();
+                renderAccountsPills();
+            }
+        }
+
+        function deleteCurrentAccount() {
+            if (!appState.activeAccount) return;
+            if (confirm(`"${appState.activeAccount}" ၏ စာရင်းကို ဖျက်ရန် သေချာပါသလား?`)) {
+                const toDel = appState.activeAccount;
+                delete appState.data[toDel];
+                appState.accounts = appState.accounts.filter(a => a !== toDel);
+                appState.activeAccount = appState.accounts.length > 0 ? appState.accounts[0] : '';
+                
+                saveToLocalStorage();
+                renderAccountsPills();
+                renderDaysInputs();
+                renderRules();
+                calculateAll();
+            }
+        }
+
+        // --- Render Days Input Form ---
+        function renderDaysInputs() {
+            const container = document.getElementById('daysContainer');
+            container.innerHTML = '';
+
+            if (!appState.activeAccount) {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">ကျေးဇူးပြု၍ စာရင်းအမည် ထည့်သွင်းပါ သို့မဟုတ် ရွေးချယ်ပါ။</p>';
+                return;
+            }
+
+            const currentData = appState.data[appState.activeAccount].days;
+
+            DAYS.forEach(day => {
+                const dayData = currentData[day.id] || createEmptyDayObject();
+                
+                const card = document.createElement('div');
+                card.className = 'border border-gray-200 rounded-xl p-4 bg-gray-50/50 space-y-3';
+                card.innerHTML = `
+                    <div class="font-bold text-gray-800 text-base flex justify-between items-center">
+                        <span>${day.name}</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Morning Income -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-blue-600">မနက် ရငွေ</label>
+                            <div class="relative">
+                                <input type="number" id="input_${day.id}_morningIncome" value="${dayData.morningIncome || ''}" placeholder="0" 
+                                    oninput="updateDayValue('${day.id}', 'morningIncome', this.value)"
+                                    class="w-full pl-3 pr-9 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <button onclick="startFieldSpeech('input_${day.id}_morningIncome')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600 text-xs px-1">
+                                    <i class="fa-solid fa-microphone"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Morning Expense -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-red-600">မနက် ပေးငွေ</label>
+                            <div class="relative">
+                                <input type="number" id="input_${day.id}_morningExpense" value="${dayData.morningExpense || ''}" placeholder="0" 
+                                    oninput="updateDayValue('${day.id}', 'morningExpense', this.value)"
+                                    class="w-full pl-3 pr-9 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+                                <button onclick="startFieldSpeech('input_${day.id}_morningExpense')" class="absolute right-2 top-2 text-gray-400 hover:text-red-600 text-xs px-1">
+                                    <i class="fa-solid fa-microphone"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Evening Income -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-blue-600">ညနေ ရငွေ</label>
+                            <div class="relative">
+                                <input type="number" id="input_${day.id}_eveningIncome" value="${dayData.eveningIncome || ''}" placeholder="0" 
+                                    oninput="updateDayValue('${day.id}', 'eveningIncome', this.value)"
+                                    class="w-full pl-3 pr-9 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <button onclick="startFieldSpeech('input_${day.id}_eveningIncome')" class="absolute right-2 top-2 text-gray-400 hover:text-blue-600 text-xs px-1">
+                                    <i class="fa-solid fa-microphone"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Evening Expense -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-red-600">ညနေ ပေးငွေ</label>
+                            <div class="relative">
+                                <input type="number" id="input_${day.id}_eveningExpense" value="${dayData.eveningExpense || ''}" placeholder="0" 
+                                    oninput="updateDayValue('${day.id}', 'eveningExpense', this.value)"
+                                    class="w-full pl-3 pr-9 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+                                <button onclick="startFieldSpeech('input_${day.id}_eveningExpense')" class="absolute right-2 top-2 text-gray-400 hover:text-red-600 text-xs px-1">
+                                    <i class="fa-solid fa-microphone"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updateDayValue(dayId, field, val) {
+            if (!appState.activeAccount) return;
+            const num = parseFloat(val) || 0;
+            appState.data[appState.activeAccount].days[dayId][field] = num;
+            saveToLocalStorage();
+            calculateAll();
+        }
+
+        // --- Render Rules Section ---
+        function renderRules() {
+            if (!appState.activeAccount) return;
+
+            const incomeContainer = document.getElementById('incomeRulesContainer');
+            const expenseContainer = document.getElementById('expenseRulesContainer');
+
+            incomeContainer.innerHTML = '';
+            expenseContainer.innerHTML = '';
+
+            const incRules = appState.data[appState.activeAccount].incomeRules || [];
+            const expRules = appState.data[appState.activeAccount].expenseRules || [];
+
+            // Income Rules
+            incRules.forEach((rule, idx) => {
+                incomeContainer.appendChild(createRuleRow('income', idx, rule));
+            });
+
+            // Expense Rules
+            expRules.forEach((rule, idx) => {
+                expenseContainer.appendChild(createRuleRow('expense', idx, rule));
+            });
+        }
+
+        function createRuleRow(type, index, rule) {
+            const row = document.createElement('div');
+            row.className = 'flex items-center space-x-2';
+
+            const select = document.createElement('select');
+            select.className = 'px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+            OPERATORS.forEach(op => {
+                const opt = document.createElement('option');
+                opt.value = op.code;
+                opt.innerText = op.label;
+                if (rule.op === op.code) opt.selected = true;
+                select.appendChild(opt);
+            });
+            select.onchange = (e) => updateRule(type, index, 'op', e.target.value);
+
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.value = rule.val;
+            input.placeholder = 'ပမာဏ';
+            input.className = 'flex-1 px-3 py-2 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+            input.oninput = (e) => updateRule(type, index, 'val', e.target.value);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'px-3 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm hover:bg-red-50 hover:text-red-600 transition-colors';
+            deleteBtn.innerText = 'ဖျက်';
+            deleteBtn.onclick = () => removeRule(type, index);
+
+            row.appendChild(select);
+            row.appendChild(input);
+            row.appendChild(deleteBtn);
+
+            return row;
+        }
+
+        function addRule(type) {
+            if (!appState.activeAccount) return;
+            const targetArray = type === 'income' 
+                ? appState.data[appState.activeAccount].incomeRules 
+                : appState.data[appState.activeAccount].expenseRules;
+
+            targetArray.push({ op: '+', val: 0 });
+            saveToLocalStorage();
+            renderRules();
+            calculateAll();
+        }
+
+        function updateRule(type, index, field, value) {
+            if (!appState.activeAccount) return;
+            const targetArray = type === 'income' 
+                ? appState.data[appState.activeAccount].incomeRules 
+                : appState.data[appState.activeAccount].expenseRules;
+
+            if (targetArray[index]) {
+                targetArray[index][field] = field === 'val' ? (parseFloat(value) || 0) : value;
+                saveToLocalStorage();
+                calculateAll();
+            }
+        }
+
+        function removeRule(type, index) {
+            if (!appState.activeAccount) return;
+            const targetArray = type === 'income' 
+                ? appState.data[appState.activeAccount].incomeRules 
+                : appState.data[appState.activeAccount].expenseRules;
+
+            targetArray.splice(index, 1);
+            saveToLocalStorage();
+            renderRules();
+            calculateAll();
+        }
+
+        // --- Calculation Core Engine ---
+        function calculateAll() {
+            if (!appState.activeAccount) return;
+
+            const currentDays = appState.data[appState.activeAccount].days;
+
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            DAYS.forEach(day => {
+                const d = currentDays[day.id] || {};
+                totalIncome += (parseFloat(d.morningIncome) || 0) + (parseFloat(d.eveningIncome) || 0);
+                totalExpense += (parseFloat(d.morningExpense) || 0) + (parseFloat(d.eveningExpense) || 0);
+            });
+
+            // Calculate Rules for Net Income
+            const incRules = appState.data[appState.activeAccount].incomeRules || [];
+            let netIncome = totalIncome;
+            incRules.forEach(rule => {
+                netIncome = applyRule(netIncome, rule.op, rule.val);
+            });
+
+            // Calculate Rules for Net Expense
+            const expRules = appState.data[appState.activeAccount].expenseRules || [];
+            let netExpense = totalExpense;
+            expRules.forEach(rule => {
+                netExpense = applyRule(netExpense, rule.op, rule.val);
+            });
+
+            // Profit / Loss = Net Income - Net Expense
+            const finalProfit = netIncome - netExpense;
+
+            // Render Results to UI
+            document.getElementById('totalIncomeText').innerText = totalIncome.toLocaleString();
+            document.getElementById('totalExpenseText').innerText = totalExpense.toLocaleString();
+
+            document.getElementById('netIncomeText').innerText = netIncome.toLocaleString();
+            document.getElementById('netExpenseText').innerText = netExpense.toLocaleString();
+
+            const profitCard = document.getElementById('profitResultCard');
+            const profitText = document.getElementById('finalProfitText');
+
+            if (finalProfit >= 0) {
+                profitCard.className = "bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center";
+                profitText.className = "text-xl font-bold text-emerald-600";
+                profitText.innerText = `အမြတ် + ${finalProfit.toLocaleString()}`;
+            } else {
+                profitCard.className = "bg-rose-50 border border-rose-100 rounded-xl p-4 text-center";
+                profitText.className = "text-xl font-bold text-rose-600";
+                profitText.innerText = `အရှုံး - ${Math.abs(finalProfit).toLocaleString()}`;
+            }
+        }
+
+        function applyRule(currentVal, op, ruleVal) {
+            const num = parseFloat(ruleVal) || 0;
+            switch (op) {
+                case '+': return currentVal + num;
+                case '-': return currentVal - num;
+                case '*': return currentVal * num;
+                case '/': return num !== 0 ? currentVal / num : currentVal;
+                case '%': return currentVal - (currentVal * (num / 100));
+                case '=': return num;
+                default: return currentVal;
+            }
+        }
+
+        // --- Voice Recognition Logic & Parsing ---
+        function toggleGlobalVoiceSearch() {
+            if (!recognition) {
+                alert("သင့် ဘရောက်ဇာသည် အသံသုံးစနစ်ကို ထောက်ပံ့မှု မရှိပါ။");
+                return;
+            }
+            if (isListening) {
+                recognition.stop();
+            } else {
+                activeInputTargetId = null; // Global mode
+                recognition.start();
+            }
+        }
+
+        function startFieldSpeech(elementId) {
+            if (!recognition) {
+                alert("သင့် ဘရောက်ဇာသည် အသံသုံးစနစ်ကို ထောက်ပံ့မှု မရှိပါ။");
+                return;
+            }
+            activeInputTargetId = elementId;
+            recognition.start();
+        }
+
+        function updateMicUI(listening) {
+            const globalBtn = document.getElementById('globalMicBtn');
+            const globalIcon = document.getElementById('globalMicIcon');
+            const wave = document.getElementById('recordingWave');
+            const title = document.getElementById('voiceBannerTitle');
+            const sub = document.getElementById('voiceBannerSub');
+
+            if (listening) {
+                globalBtn.classList.add('mic-active');
+                globalIcon.className = 'fa-solid fa-stop';
+                wave.classList.remove('hidden');
+                title.innerText = "နားထောင်နေသည်...";
+                sub.innerText = "စကားပြောပါ (ဥပမာ- တနင်္လာ မနက် ရငွေ ၅၀၀၀)";
+            } else {
+                globalBtn.classList.remove('mic-active');
+                globalIcon.className = 'fa-solid fa-microphone';
+                wave.classList.add('hidden');
+                title.innerText = "အသံဖြင့် စာရင်းသွင်းမည်";
+                sub.innerText = "ခလုတ်ကိုနှိပ်ပြီး \"တနင်္လာ မနက် ရငွေ ၅၀၀၀\" ဟုပြောပါ";
+            }
+        }
+
+        // Convert Burmese digits to standard ASCII numbers
+        function parseBurmeseDigits(str) {
+            const burmeseDigits = ['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'];
+            let result = str;
+            for (let i = 0; i < 10; i++) {
+                result = result.replace(new RegExp(burmeseDigits[i], 'g'), i.toString());
+            }
+            return result;
+        }
+
+        function extractNumber(str) {
+            const asciiStr = parseBurmeseDigits(str);
+            const matches = asciiStr.match(/\d+/g);
+            return matches ? parseInt(matches.join(''), 10) : null;
+        }
+
+        function handleSpeechResult(text) {
+            console.log("Speech Result Raw:", text);
+
+            // Targeted Input Dictation
+            if (activeInputTargetId) {
+                const targetElem = document.getElementById(activeInputTargetId);
+                if (targetElem) {
+                    const num = extractNumber(text);
+                    if (num !== null) {
+                        targetElem.value = num;
+                        targetElem.dispatchEvent(new Event('input'));
+                    } else {
+                        targetElem.value = text;
+                    }
+                }
+                activeInputTargetId = null;
+                return;
+            }
+
+            // Voice Command Logic (Global Voice Parser)
+            const cleanText = text.toLowerCase();
+
+            // Check Day keyword
+            let matchedDay = DAYS.find(d => cleanText.includes(d.name.toLowerCase()));
+            
+            // Check Session (Morning vs Evening)
+            let isMorning = cleanText.includes('မနက်') || cleanText.includes('နံနက်');
+            let isEvening = cleanText.includes('ညနေ');
+
+            // Check Type (Income vs Expense)
+            let isIncome = cleanText.includes('ရငွေ') || cleanText.includes('ဝင်ငွေ');
+            let isExpense = cleanText.includes('ပေးငွေ') || cleanText.includes('ထွက်ငွေ');
+
+            const val = extractNumber(cleanText);
+
+            if (matchedDay && val !== null && appState.activeAccount) {
+                let targetField = '';
+                if (isMorning && isIncome) targetField = 'morningIncome';
+                else if (isMorning && isExpense) targetField = 'morningExpense';
+                else if (isEvening && isIncome) targetField = 'eveningIncome';
+                else if (isEvening && isExpense) targetField = 'eveningExpense';
+                else if (isIncome) targetField = 'morningIncome'; // Default fallback
+                else if (isExpense) targetField = 'morningExpense';
+
+                if (targetField) {
+                    updateDayValue(matchedDay.id, targetField, val);
+                    renderDaysInputs();
+                    alert(`အတည်ပြုပြီး: ${matchedDay.name} ${isMorning ? 'မနက်' : 'ညနေ'} ${isIncome ? 'ရငွေ' : 'ပေးငွေ'} ${val.toLocaleString()} ထည့်ပြီးပါပြီ။`);
+                    return;
+                }
+            }
+
+            if (cleanText.includes('သိမ်း') || cleanText.includes('သိမ်းမည်')) {
+                saveAllData();
+                return;
+            }
+
+            alert(`ကြားရသော အသံ: "${text}"\n(နေ့ရက်၊ မနက်/ညနေ၊ ရငွေ/ပေးငွေ နှင့် ပမာဏ အတိအကျ ပြောကြားပေးပါ)`);
+        }
+
+        // --- Summary Modal & Actions ---
+        function openSummaryModal() {
+            if (!appState.activeAccount) {
+                alert("ကျေးဇူးပြု၍ စာရင်းအမည် ရွေးချယ်ပါ။");
+                return;
+            }
+
+            const modal = document.getElementById('summaryModal');
+            const title = document.getElementById('summaryModalTitle');
+            const tbody = document.getElementById('summaryTableBody');
+
+            title.innerText = `${appState.activeAccount} — စာရင်းအနှစ်ချုပ်`;
+            tbody.innerHTML = '';
+
+            const currentDays = appState.data[appState.activeAccount].days;
+            let totalMorningInc = 0, totalMorningExp = 0, totalEveningInc = 0, totalEveningExp = 0;
+
+            DAYS.forEach(day => {
+                const d = currentDays[day.id] || createEmptyDayObject();
+                const mInc = d.morningIncome || 0;
+                const mExp = d.morningExpense || 0;
+                const eInc = d.eveningIncome || 0;
+                const eExp = d.eveningExpense || 0;
+
+                totalMorningInc += mInc;
+                totalMorningExp += mExp;
+                totalEveningInc += eInc;
+                totalEveningExp += eExp;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-2 border-r font-medium text-gray-800">${day.name}</td>
+                    <td class="p-2 border-r text-blue-600">${mInc}</td>
+                    <td class="p-2 border-r text-red-600">${mExp}</td>
+                    <td class="p-2 border-r text-blue-600">${eInc}</td>
+                    <td class="p-2 text-red-600">${eExp}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Total Summary Row
+            const totalTr = document.createElement('tr');
+            totalTr.className = 'bg-gray-100 font-bold';
+            totalTr.innerHTML = `
+                <td class="p-2 border-r text-gray-800">စုစုပေါင်း</td>
+                <td class="p-2 border-r text-blue-600">${totalMorningInc}</td>
+                <td class="p-2 border-r text-red-600">${totalMorningExp}</td>
+                <td class="p-2 border-r text-blue-600">${totalEveningInc}</td>
+                <td class="p-2 text-red-600">${totalEveningExp}</td>
+            `;
+            tbody.appendChild(totalTr);
+
+            // Modal Totals
+            const totalInc = totalMorningInc + totalEveningInc;
+            const totalExp = totalMorningExp + totalEveningExp;
+
+            document.getElementById('summaryModalTotalIncome').innerText = `— ${totalInc.toLocaleString()}`;
+            document.getElementById('summaryModalTotalExpense').innerText = `— ${totalExp.toLocaleString()}`;
+
+            // Calculate profit logic matching UI
+            const incRules = appState.data[appState.activeAccount].incomeRules || [];
+            let netInc = totalInc;
+            incRules.forEach(r => { netInc = applyRule(netInc, r.op, r.val); });
+
+            const expRules = appState.data[appState.activeAccount].expenseRules || [];
+            let netExp = totalExp;
+            expRules.forEach(r => { netExp = applyRule(netExp, r.op, r.val); });
+
+            const netProfit = netInc - netExp;
+            const netProfitElem = document.getElementById('summaryModalNetProfit');
+            if (netProfit >= 0) {
+                netProfitElem.className = 'text-emerald-600';
+                netProfitElem.innerText = `+ ${netProfit.toLocaleString()}`;
+            } else {
+                netProfitElem.className = 'text-rose-600';
+                netProfitElem.innerText = `- ${Math.abs(netProfit).toLocaleString()}`;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeSummaryModal() {
+            document.getElementById('summaryModal').classList.add('hidden');
+        }
+
+        function toggleVoiceGuideModal() {
+            document.getElementById('voiceGuideModal').classList.toggle('hidden');
+        }
+
+        function saveAllData() {
+            saveToLocalStorage();
+            alert("ငွေစာရင်း အချက်အလက်များကို သိမ်းဆည်းပြီးပါပြီ။");
+        }
+
+        function clearCurrentData() {
+            if (!appState.activeAccount) return;
+            if (confirm(`"${appState.activeAccount}" ၏ တပတ်စာ ငွေစာရင်းများကို အသစ်ပြန်စရန် သေချာပါသလား?`)) {
+                DAYS.forEach(d => {
+                    appState.data[appState.activeAccount].days[d.id] = createEmptyDayObject();
+                });
+                saveToLocalStorage();
+                renderDaysInputs();
+                calculateAll();
+                closeSummaryModal();
+            }
+        }
+    </script>
+</body>
+</html>
